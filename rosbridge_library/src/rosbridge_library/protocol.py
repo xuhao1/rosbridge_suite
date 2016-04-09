@@ -39,6 +39,8 @@ from rosbridge_library.internal.exceptions import MissingArgumentException
 #from rosbridge_library.internal.pngcompression import encode
 from rosbridge_library.capabilities.fragmentation import Fragmentation
 from rosbridge_library.util import json
+from bson.codec_options import CodecOptions
+import collections
 
 
 def is_number(s):
@@ -168,6 +170,7 @@ class Protocol:
                 self.log("error", "Received a rosbridge v1.0 message.  Please refer to rosbridge.org for the correct format of rosbridge v2.0 messages.  Original message was: %s" % message_string)
             else:
                 self.log("error", "Received a message without an op.  All messages require 'op' field with value one of: %s.  Original message was: %s" % (self.operations.keys(), message_string), mid)
+                print msg
             return
         op = msg["op"]
         if op not in self.operations:
@@ -309,7 +312,15 @@ class Protocol:
 #                self.log("error", error_msg, cid)
 
             # re-raise Exception to allow handling outside of deserialize function instead of returning None
-            raise
+            try:
+                #print "try bson"
+                options = CodecOptions(document_class = collections.OrderedDict)
+                #dic =  bson.BSON().decode(msg,options)
+                dic = bson.decode_all(msg)[0]
+                return dic
+            except Exception, e:
+                print e
+                raise
             #return None
 
     def register_operation(self, opcode, handler):
